@@ -1,9 +1,3 @@
 # Week 1 - Cloud Fundamentals & Account Setup
 
-The root user has full control over the AWS account, so I should not use it for everyday tasks.
-I enabled MFA on the root account to make it more secure.
-For regular work, I created an IAM admin user instead.
-IAM lets me manage who can access AWS and what actions they are allowed to perform.
-AWS uses a Shared Responsibility Model, which means security is shared between AWS and the customer.
-AWS is responsible for protecting the physical data centers, hardware, and cloud infrastructure.
-I am responsible for things like my passwords, MFA, IAM permissions, and the security of the resources I create.
+The AWS root user is the original account identity and has full access to all AWS services, resources, billing, and account settings. Because it has the highest level of access, it should only be used when necessary and should be protected with MFA. IAM (Identity and Access Management) is an AWS service that controls who can access AWS and what they are allowed to do. Instead of using the root user for everyday tasks, I can use IAM users with appropriate permissions. The Shared Responsibility Model explains how security responsibilities are divided between AWS and the customer. AWS is responsible for securing the physical infrastructure and services that run the cloud, while the customer is responsible for securing their accounts, access, data, and AWS resources.
