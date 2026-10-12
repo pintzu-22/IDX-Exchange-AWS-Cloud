@@ -28,3 +28,27 @@ I tested the policy using the `s3test` AWS CLI profile. Running `aws s3 ls --pro
 ## IAM Access Analyzer
 
 I created an IAM Access Analyzer to monitor AWS resources for external access. The analyzer showed 0 active findings.
+
+---
+
+## Week 03 — EC2 Deployment and EBS Snapshot
+
+This week, I deployed the PropertyLite Flask API to an Amazon EC2 instance using a bootstrap script in EC2 User Data.
+
+I configured SSH access on port 22, opened port 8080 for the PropertyLite API, connected to the instance using SSH, and verified the API from my local laptop using `curl`.
+
+I also practiced troubleshooting an SSH timeout caused by an outdated `My IP` Security Group rule.
+
+After the deployment was working, I created an EBS snapshot of the instance's root volume and completed the required cleanup by terminating the EC2 instance and confirming that the root EBS volume was deleted.
+
+### Key Tasks
+- Launched and configured an Amazon Linux EC2 instance
+- Used User Data to automatically deploy PropertyLite
+- Configured Security Group rules for ports 22 and 8080
+- Connected to EC2 using SSH
+- Verified PropertyLite from my laptop
+- Troubleshot an SSH timeout
+- Created an EBS snapshot
+- Cleaned up the EC2 instance and root volume
+
+[View Week 03 Runbook](./week-03/runbook.md)
