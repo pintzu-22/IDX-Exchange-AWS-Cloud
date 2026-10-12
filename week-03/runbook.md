@@ -1,14 +1,11 @@
 # Week 03 — EC2 Deployment and EBS Snapshot
 
----
-
 This week focused on deploying the PropertyLite Flask API to an Amazon EC2 instance and learning how EC2 networking and EBS storage work.
 
 The main goal was to use the PropertyLite from Week 0 and deploy it to an AWS EC2 instance using a bootstrap script.
 
-## Lab 3.1 — Deploy PropertyLite to EC2 with a Bootstrap Script
 
----
+## Lab 3.1 — Deploy PropertyLite to EC2 with a Bootstrap Script
 
 ### 1. Launch the EC2 Instance
 
@@ -87,9 +84,8 @@ I also tested:
 This returned the Sacramento property listing.
 These tests confirmed that the PropertyLite Flask API was successfully running on the EC2 instance and could be accessed from my laptop over the internet.
 
-## Lab 3.2 — EBS Snapshot Practice
 
----
+## Lab 3.2 — EBS Snapshot Practice
 
 I created a snapshot of the root EBS volume attached to `property-api-01`.
 
@@ -99,9 +95,8 @@ After creating the snapshot, I went to `EC2 → Snapshots` and waited until its 
 
 If I created a new EBS volume from this snapshot, the new volume would contain the data from the original volume at the time the snapshot was created.
 
-## Debug Lab 3.3 — SSH Connection Timeout
 
----
+## Debug Lab 3.3 — SSH Connection Timeout
 
 My SSH connection initially timed out because the `My IP` rule in the Security Group did not match my current public IP.
 
@@ -111,9 +106,8 @@ I then updated the SSH rule to my current IP and changed it back to `My IP`.
 
 (The `My IP` value does not automatically update when my public IP changes.)
 
-## Cleanup
 
----
+## Cleanup
 
 After completing the labs and saving the required screenshots, I terminated the `property-api-01` EC2 instance.
 
