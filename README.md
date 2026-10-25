@@ -51,4 +51,91 @@ After the deployment was working, I created an EBS snapshot of the instance's ro
 - Created an EBS snapshot
 - Cleaned up the EC2 instance and root volume
 
-[View Week 03 Runbook](./week-03/runbook.md)
+## Week 04 — Storage & Databases
+
+This week, I learned about AWS storage and database services, including S3, EBS, EFS, RDS, and DynamoDB. I also learned about S3 storage classes, lifecycle rules, RDS Multi-AZ, and DynamoDB partition keys and capacity modes.
+
+**What I Did:**
+
+- **Amazon S3:** Created an S3 bucket, uploaded my Week 3 runbook, and configured a lifecycle rule to move files to Glacier Flexible Retrieval after 30 days.
+- **Amazon RDS:** Created a MySQL database and connected to it through an EC2 instance in the same VPC. Imported 55,212 property records, removed 17 sensitive columns, and checked the listing IDs. I also used SQL to calculate property counts and average prices by city.
+- **Amazon DynamoDB:** Created a `Properties` table using AWS CLI, set `L_ListingID` as the partition key, and used `put-item` and `get-item` to add and retrieve a record.
+- **Cleanup:** Deleted the DynamoDB table, terminated the EC2 instance, and initiated deletion of the RDS database to avoid unnecessary AWS charges.
+
+
+I learned that different AWS services are used for different types of data. S3 is useful for storing files, EBS works like a hard drive for EC2, and EFS lets multiple servers share files. RDS is useful for structured data and SQL queries, while DynamoDB is useful for fast lookups using keys.
+
+**Deliverable:**
+- [Week 04 — Storage & Database Decision Guide](week-04/decision-guide.md)
+
+## Week 05 — VPC Networking
+
+This week, I learned how AWS networking works by creating a custom VPC and connecting to a private EC2 instance through a bastion host.
+
+### Lab 5.1 — Create a Custom VPC
+
+I created a VPC using the AWS Console with the following settings:
+
+- VPC name: `training-vpc`
+- IPv4 CIDR: `10.0.0.0/16`
+- Availability Zones: 2
+- Public subnets: 2
+- Private subnets: 2
+- NAT Gateway: 1
+
+This helped me understand the difference between public and private subnets and how AWS manages network traffic.
+
+### Lab 5.2 — Bastion Host
+
+I launched two EC2 instances:
+
+- `training-bastion` in a public subnet
+- `training-private` in a private subnet
+
+The bastion host had a public IP address and allowed SSH access from my IP.
+
+The private instance had no public IP address. Its security group allowed SSH only from the bastion host's security group.
+
+#### SSH Connection
+
+First, I connected to the bastion host from my Mac:
+
+```bash
+ssh -A -i ~/.ssh/training-key.pem ec2-user@98.92.142.178
+```
+
+Then, from the bastion host, I connected to the private instance:
+
+```bash
+ssh ec2-user@10.0.142.67
+```
+
+At first, I got a `Permission denied (publickey)` error.
+
+I fixed this by adding my SSH key to the SSH agent on my Mac using `ssh-add`.
+
+After that, I successfully connected to the private instance through the bastion host.
+
+### Lab 5.3 — Network Debugging
+
+I ran the following command on the private instance:
+
+```bash
+sudo yum update -y
+```
+
+The command completed successfully and showed `Nothing to do` and `Complete!`.
+
+This showed that the instance could access the package repositories even without a public IP address.
+
+### Traffic Path
+
+My Mac connects to the bastion host using its public IP address through SSH.
+
+The bastion host then connects to the private EC2 instance using its private IP address.
+
+This setup allows me to manage the private instance without exposing it directly to the internet.
+
+### VPC Diagram
+
+![VPC Diagram](vpc-diagram.png)
