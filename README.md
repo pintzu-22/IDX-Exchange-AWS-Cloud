@@ -138,4 +138,4 @@ This setup allows me to manage the private instance without exposing it directly
 
 ### VPC Diagram
 
-![VPC Diagram](vpc-diagram.png)
+![VPC Diagram](vpc-diagram.drawio.png)
