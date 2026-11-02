@@ -139,3 +139,117 @@ This setup allows me to manage the private instance without exposing it directly
 ### VPC Diagram
 
 ![VPC Diagram](week-05/vpc-diagram.png)
+
+
+## Week 06 — Load Balancing & Auto Scaling
+
+This week, I focus on how to use an Application Load Balancer (ALB) and an Auto Scaling Group (ASG) to manage EC2 instances running the PropertyLite Flask API.
+
+### Lab 6.1 — Application Load Balancer & Auto Scaling Group
+
+#### 1. Created a Launch Template
+
+I created a Launch Template called `property-api-template` with the following settings:
+
+- **AMI:** Amazon Linux 2023
+- **Instance Type:** t3.micro
+- **Security Group:** default
+- **User Data:** Installed Python and Flask and started the PropertyLite API on port 8080.
+
+The Launch Template allows AWS to launch new EC2 instances using the same settings.
+
+#### 2. Created a Target Group
+
+I created a Target Group to connect the EC2 instances to the ALB.
+
+- **Target Type:** Instances
+- **Protocol:** HTTP
+- **Port:** 8080
+- **Health Check Path:** `/health`
+
+The health check helps AWS determine whether the Flask API is running correctly.
+
+#### 3. Created an Application Load Balancer
+
+I created an internet-facing ALB named `training-alb` across two public subnets.
+
+The ALB receives HTTP requests on port 80 and forwards them to the EC2 instances through the Target Group.
+
+#### 4. Created an Auto Scaling Group
+
+I created an ASG named `training-asg` across two private subnets in different Availability Zones.
+
+- **Desired Capacity:** 2
+- **Minimum Capacity:** 1
+- **Maximum Capacity:** 4
+- **Scaling Policy:** Target Tracking — Average CPU Utilization 50%
+
+The ASG automatically manages the number of EC2 instances based on the scaling policy.
+
+#### 5. Tested the ALB
+
+After fixing the initial deployment issue, both EC2 instances became Healthy.
+
+I tested the ALB using:
+
+```bash
+curl http://training-alb-909055074.us-east-1.elb.amazonaws.com/health
+curl http://training-alb-909055074.us-east-1.elb.amazonaws.com/properties
+```
+
+The `/health` endpoint returned:
+
+```json
+{"status":"ok"}
+```
+
+The `/properties` endpoint successfully returned sample property data.
+
+### Lab 6.2 — Self-Healing & CPU Stress Test
+
+#### Part A — Self-Healing
+
+I manually terminated an EC2 instance to test the ASG's self-healing behavior.
+
+I observed the replacement process through the ASG Activity History.
+
+#### Part B — CPU Stress Test
+
+I installed `stress` on an EC2 instance and ran:
+
+```bash
+sudo dnf install -y stress
+stress --cpu 2 --timeout 300
+```
+
+CloudWatch showed CPU utilization increasing to **57.01%**.
+
+I also observed automatic Scale In when CPU usage was low. However, automatic CPU-triggered Scale Out was not observed during the test.
+
+For more details, see [Load Test Report](load-test-report.md).
+
+### Debug Lab 6.3 — ALB Returns 502 Bad Gateway
+
+#### Problem
+
+The ALB returned a `502 Bad Gateway` error, and both EC2 instances were Unhealthy.
+
+#### Troubleshooting
+
+1. Checked the Target Group health status and Security Group rules.
+2. Checked the EC2 System Log and found `Failed to run module scripts-user`.
+3. Found and removed an extra blank line before `#!/bin/bash` in the User Data.
+4. Created Launch Template again.
+
+#### Result
+
+After launch template created again, both EC2 instances became Healthy, and the ALB successfully returned responses from `/health` and `/properties`.
+
+#### Key Takeaways
+- **ALB:** Distributes incoming HTTP requests to healthy EC2 instances.
+- **Target Group:** Connects the ALB to backend EC2 instances and performs health checks.
+- **ASG:** Automatically manages EC2 capacity.
+- **Self-Healing:** Replaces terminated or unhealthy instances.
+- **Scale Out:** Adds EC2 instances when more capacity is needed.
+- **Scale In:** Removes EC2 instances when less capacity is needed.
+- **CloudWatch:** Monitors CPU utilization and scaling activities.
