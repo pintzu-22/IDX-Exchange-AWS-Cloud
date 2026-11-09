@@ -253,3 +253,165 @@ After launch template created again, both EC2 instances became Healthy, and the 
 - **Scale Out:** Adds EC2 instances when more capacity is needed.
 - **Scale In:** Removes EC2 instances when less capacity is needed.
 - **CloudWatch:** Monitors CPU utilization and scaling activities.
+
+## Week 07 — Serverless & Event-Driven Architecture
+
+### Objective
+
+This week, I focus on how to build a serverless API using AWS Lambda, API Gateway, and DynamoDB. I also learned how Amazon SQS and Dead-Letter Queues (DLQs) work.
+
+### Lab 7.1 — API Gateway, Lambda, and DynamoDB
+
+#### 1. DynamoDB Setup
+
+I created a DynamoDB table named `Properties` with `L_ListingID` as the partition key and `PAY_PER_REQUEST` billing mode.
+
+I added a sample property record (`R100234`) and used `get-item` to verify that the data could be retrieved.
+
+#### 2. Lambda Function
+
+I created a Lambda function named `get-property` using Python 3.12.
+
+The function uses Boto3 to look up property data from DynamoDB based on the listing ID received from API Gateway.
+
+#### 3. IAM Permissions
+
+I created a custom IAM policy that allows the Lambda function to perform `dynamodb:GetItem` only on the `Properties` table.
+
+(This follows the least-privilege principle from Week 2.)
+
+#### 4. API Gateway
+
+I created an HTTP API named `propertylite-api` and connected it to the Lambda function.
+
+- Method: `GET`
+- Route: `/properties/{id}`
+- Integration: Lambda `get-property`
+
+#### 5. Request Path Diagram
+
+```text
+Request:
+Client (Mac Terminal)
+       |
+       | GET /properties/R100234
+       v
+API Gateway (HTTP API)
+       |
+       v
+AWS Lambda (get-property)
+       |
+       | DynamoDB GetItem
+       v
+DynamoDB (Properties)
+
+Response:
+DynamoDB → Lambda → API Gateway → Client (Mac Terminal)
+                      |
+                      v
+                 JSON Response
+```
+
+When I send a GET request, API Gateway calls the Lambda function. Lambda then gets the property data from DynamoDB and returns it as JSON.
+
+#### 6. API Testing
+
+I used curl to test the API:
+
+```bash
+curl -i "https://k694kuq6ej.execute-api.us-east-1.amazonaws.com/properties/R100234"
+```
+
+The API successfully returned the property data in JSON format.
+
+### Lab 7.2 — SQS with a Dead-Letter Queue
+
+I created two SQS queues:
+
+- `property-queue`: Stores property messages.
+- `property-dlq`: Stores messages that repeatedly fail to be processed.
+
+#### 1. Create the Queues
+
+First, I created the Dead-Letter Queue:
+
+```bash
+aws sqs create-queue --queue-name property-dlq
+```
+
+Then, I created `property-queue` and set up a RedrivePolicy with `maxReceiveCount` set to 3.
+
+```bash
+aws sqs create-queue \
+  --queue-name property-queue \
+  --attributes '{"RedrivePolicy":"{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:629690103267:property-dlq\",\"maxReceiveCount\":\"3\"}"}'
+```
+
+#### 2. Send Message
+
+I used AWS CLI to send a test message to `property-queue`.
+
+```bash
+aws sqs send-message \
+  --queue-url https://sqs.us-east-1.amazonaws.com/629690103267/property-queue \
+  --message-body '{"PropertyId":"P1002"}'
+```
+
+The command returned a MessageId, showing that the message was successfully sent to SQS.
+
+#### 3. Receive Message
+
+Then, I used `receive-message` to get the same message from the queue.
+
+```bash
+aws sqs receive-message \
+  --queue-url https://sqs.us-east-1.amazonaws.com/629690103267/property-queue
+```
+
+The response included:
+
+```json
+{
+  "MessageId": "316c2600-47a7-4139-b3c2-babeaee77488",
+  "Body": "{\"PropertyId\":\"P1002\"}"
+}
+```
+
+I successfully sent and received the same message using Amazon SQS.
+
+
+### Debug Lab 7.3 — API Gateway 500 Internal Server Error
+
+**Issue:** When I tested the API, I got a 500 Internal Server Error.
+
+**Root Cause:** I checked CloudWatch Logs and found that Python couldn't convert the Decimal values from DynamoDB into JSON (TypeError: Object of type Decimal is not JSON serializable).
+
+**Fix:** I updated the Lambda code to convert Decimal values into integers or floats before returning the response.
+
+I added the following import:
+
+```python
+from decimal import Decimal
+```
+
+Then I modified the `json.dumps()` part:
+
+```python
+'body': json.dumps(
+    resp.get('Item', {}),
+    default=lambda x: int(x) if isinstance(x, Decimal) and x == int(x) else float(x)
+)
+```
+
+The `default=lambda` function converts Decimal values into integers or floats. For example, `Decimal('450000')` becomes `450000`, so Python can convert the data into JSON.
+
+This fixed the JSON conversion issue and allowed Lambda to return the property data.
+
+
+### Key Takeaways
+
+- Learned how API Gateway connects HTTP requests to Lambda.
+- Used Boto3 to retrieve property data from DynamoDB.
+- Applied IAM least-privilege permissions.
+- Created SQS queues and set up a Dead-Letter Queue.
+- Used CloudWatch Logs to debug Lambda errors.
