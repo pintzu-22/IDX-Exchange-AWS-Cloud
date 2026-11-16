@@ -254,6 +254,7 @@ After launch template created again, both EC2 instances became Healthy, and the 
 - **Scale In:** Removes EC2 instances when less capacity is needed.
 - **CloudWatch:** Monitors CPU utilization and scaling activities.
 
+
 ## Week 07 — Serverless & Event-Driven Architecture
 
 ### Objective
@@ -415,3 +416,127 @@ This fixed the JSON conversion issue and allowed Lambda to return the property d
 - Applied IAM least-privilege permissions.
 - Created SQS queues and set up a Dead-Letter Queue.
 - Used CloudWatch Logs to debug Lambda errors.
+
+
+## Week 08 — Infrastructure as Code (Terraform)
+
+### Objective
+
+This lab focus on learning Infrastructure as Code (IaC) by using Terraform to recreate the VPC architecture from Week 5.
+
+Instead of manually creating AWS resources through the AWS Console, I used Terraform to create and manage them.
+
+---
+
+### Terraform Commands and State
+
+#### Terraform Commands
+
+| Command | Purpose |
+|---|---|
+| `terraform init` | Set up Terraform and download the required files |
+| `terraform plan` | Preview infrastructure changes before applying them |
+| `terraform apply` | Create or modify AWS resources |
+| `terraform state list` | List resources tracked by Terraform State |
+| `terraform destroy` | Delete Terraform-managed resources |
+
+
+#### Why Terraform State Matters
+
+Terraform State tracks the AWS resources created and managed by Terraform.
+
+It helps Terraform know which resources already exist and what changes are needed. Without the correct state, Terraform may not be able to manage existing resources properly.
+
+State files may contain sensitive information, so they should not be uploaded to a public GitHub repository.
+
+### Lab 8.1 — Reproduce Week 5's VPC Using Terraform
+
+#### Step 1 — Create the Terraform Configuration
+
+I created `main.tf` using the AWS VPC module (`terraform-aws-modules/vpc/aws`, version `5.8.1`).
+
+The configuration included:
+
+- Region: `us-east-1`
+- VPC: `training-vpc-tf`
+- VPC CIDR: `10.1.0.0/16`
+- Availability Zones: `us-east-1a`, `us-east-1b`
+- 2 Public Subnets
+- 2 Private Subnets
+- 1 NAT Gateway
+- Internet Gateway and Route Tables
+
+#### Step 2 — Initialize Terraform
+
+```bash
+terraform init
+```
+
+Terraform downloaded the required AWS Provider and VPC module.
+
+**Result:** Terraform initialized successfully.
+
+#### Step 3 — Review the Terraform Plan
+
+```bash
+terraform plan
+```
+
+This command previews the infrastructure changes before creating resources.
+
+**Result:**
+
+```text
+Plan: 19 to add, 0 to change, 0 to destroy.
+```
+
+#### Step 4 — Apply the Terraform Configuration
+
+```bash
+terraform apply
+```
+
+I reviewed the execution plan and entered `yes` to approve the deployment.
+
+**Result:**
+
+```text
+Apply complete! Resources: 19 added, 0 changed, 0 destroyed.
+```
+
+I verified that the VPC `training-vpc-tf` appeared in the AWS Console with the status `Available`.
+
+---
+
+### Debug 8.2 — Terraform State and Drift Check
+
+I used the following commands to inspect Terraform-managed infrastructure and check for drift.
+
+```bash
+terraform state list
+terraform plan
+```
+
+**Result:**
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+Terraform found no differences between the AWS resources and the configuration in `main.tf`.
+
+There were no errors or drift, so I did not need to fix anything.
+
+**Key Takeaway:** Terraform State keeps a record of the resources managed by Terraform, and `terraform plan` helps check if the AWS resources match the configuration.
+
+---
+
+### Cleanup — Terraform Destroy
+
+After completing the lab, I removed the AWS resources.
+
+```bash
+terraform destroy
+```
+
+I verified that the VPC and NAT Gateway were no longer present in the AWS Console.
