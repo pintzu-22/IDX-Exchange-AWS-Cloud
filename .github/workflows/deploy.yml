@@ -1,0 +1,34 @@
+
+name: Deploy PropertyLite to ECS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::629690103267:role/github-actions-deploy-role
+          aws-region: us-east-1
+
+      - run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin 629690103267.dkr.ecr.us-east-1.amazonaws.com
+
+      - run: |
+          cd propertylite
+          docker build -t property-api .
+          docker tag property-api:latest 629690103267.dkr.ecr.us-east-1.amazonaws.com/property-api:latest
+          docker push 629690103267.dkr.ecr.us-east-1.amazonaws.com/property-api:latest
+
+      - run: |
+          aws ecs update-service --cluster training-cluster --service property-api-service --force-new-deployment
